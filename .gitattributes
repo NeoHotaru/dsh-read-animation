@@ -1,0 +1,11 @@
+# Keep the working tree byte-identical across platforms.
+#
+# Git for Windows defaults to core.autocrlf=true, so a file committed with LF
+# comes back with CRLF in someone else's clone — which shows up as a whole-file
+# diff the moment they touch it. This package is plain ESM and has no reason to
+# care about line endings, so LF everywhere and explicit binary fixtures.
+* text=auto eol=lf
+
+*.gif binary
+*.png binary
+*.webp binary
