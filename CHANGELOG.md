@@ -20,10 +20,21 @@ Fixed after the first release, from what a live session reported back.
 
 First release.
 
-Note for anyone publishing a later version of this package: npm routes the first
-release of a brand-new package name through staged publishing, and the registry
-carries a public `0.0.0-stage` placeholder while the real version is processed. The
-real version appears on its own a couple of minutes later; nothing needs approving.
+Note for anyone publishing a later version, because both releases so far looked like
+failures while they were simply still in flight:
+
+- `npm publish` answers `PUT … 202` and prints "Your package is being processed and
+  may take a few minutes to become available", then exits 0. For a brand-new package
+  name the registry also carries a public `0.0.0-stage` placeholder alongside it.
+  Nothing needs approving in either case.
+- Measured on 0.1.1: the version appeared in the packument **2m41s** after the PUT,
+  and its tarball became downloadable **7m05s** after it. In between, the packument
+  either 404s or lists the version while its tarball still 404s.
+- Check the tarball, not just `npm view versions`, and check it with a GET: a HEAD
+  request to the tarball URL answers 404 even once the tarball is live.
+- A mirror lags further. `registry.npmmirror.com` still served 0.1.0 well after
+  0.1.1 was live on npmjs.org, and a profile configured against it keeps installing
+  the previous version until it syncs.
 
 ### Fixed after an adversarial audit
 
