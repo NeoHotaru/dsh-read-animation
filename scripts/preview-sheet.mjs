@@ -37,10 +37,14 @@ const files = join(dshHome, 'attachments', 'v1', 'files')
  *
  * Mirrors `ctx.attachments.fileHostPath`, which the plugin uses for the header's
  * last line. This script has no mounted service, so the layout is spelled out
- * here; the integration harness asserts the real accessor returns a real path.
+ * here — and the first version of it spelled the layout wrong, printing
+ * `files/<name>` where the store uses `files/<2>/<digest>/<name>`, which put a
+ * path that does not exist onto the preview. The integration harness asserts the
+ * real accessor returns a real file, so only this script could drift.
  */
 function keptFilePath(ref) {
-  return join(files, ref.name)
+  const digest = String(ref.attachmentId).replace(/^sha256:/, '')
+  return join(files, digest.slice(0, 2), digest, ref.name)
 }
 
 /** Where a content-addressed attachment object lives. */
