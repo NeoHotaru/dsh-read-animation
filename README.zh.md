@@ -121,7 +121,7 @@ frame 9 of 24 (sample 3) · starts at 450 ms · displayed for 50 ms
 dsh plugin --profile web add dsh-read-animation
 ```
 
-`web` 换成你自己的 profile 名。从源码装：
+`web` 换成你自己的 profile 名。**目前还没发到 npm** —— 在那之前从源码装：
 
 ```sh
 cd dsh-read-animation
@@ -129,7 +129,8 @@ npm install                                     # 拉取 sharp
 dsh plugin --profile web add link:$PWD
 ```
 
-装完**重启正在跑的实例**：插件行在下一个进程才生效，`link:` 的检出版本只在启动时加载一次。
+同一个 spec 在 Web 侧边栏的 Plugins 页也能用；设置里的插件列表是只读的。装完**重启正在跑的
+实例**：插件行在下一个进程才生效，`link:` 的检出版本只在启动时加载一次。
 
 ## 用法
 

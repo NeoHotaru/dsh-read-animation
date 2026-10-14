@@ -147,7 +147,8 @@ the gaps are gaps.
 dsh plugin --profile web add dsh-read-animation
 ```
 
-Replace `web` with your profile name. From a checkout:
+Replace `web` with your profile name. **Not on npm yet** — until it is, install
+from a checkout:
 
 ```sh
 cd dsh-read-animation
@@ -155,8 +156,9 @@ npm install                                     # fetches sharp
 dsh plugin --profile web add link:$PWD
 ```
 
-Restart the running instance afterwards: plugin rows take effect on the next
-process, and a `link:`ed checkout is loaded once at startup.
+The same spec works in the Web sidebar's Plugins page, and in Settings the plugin
+list is read-only. Restart the running instance afterwards: plugin rows take
+effect on the next process, and a `link:`ed checkout is loaded once at startup.
 
 ## Usage
 
