@@ -379,6 +379,7 @@ async function main() {
                       await probeCtx.attachments.readImageRequest(block.attachment, {
                         width: 240,
                         height: 160,
+                        maxPixels: 64_000_000,
                         maxBytes: 4 * 1024 * 1024,
                       }),
                     )
@@ -421,10 +422,11 @@ async function main() {
 
       await check('two different targets do not share one sheet', async () => {
         const ref = probeAdmitted[0].attachment
-        const small = await probeCtx.attachments.readImageRequest(ref, { width: 64, height: 64, maxBytes: 8 * 1024 })
+        const small = await probeCtx.attachments.readImageRequest(ref, { width: 64, height: 64, maxPixels: 64_000_000, maxBytes: 8 * 1024 })
         const large = await probeCtx.attachments.readImageRequest(ref, {
           width: 240,
           height: 160,
+          maxPixels: 64_000_000,
           maxBytes: 4 * 1024 * 1024,
         })
         assert.notEqual(small.bytes, large.bytes, 'the size a caller asked for is part of the picture')
@@ -470,6 +472,7 @@ async function main() {
           const result = await broken.attachments.readImageRequest(probeAdmitted[0].attachment, {
             width: 240,
             height: 160,
+            maxPixels: 64_000_000,
             maxBytes: 4 * 1024 * 1024,
           })
           assert.notEqual(result.mediaType, 'image/gif', 'the model must not be handed the animation')
@@ -492,6 +495,7 @@ async function main() {
         const sheet = await resumed.attachments.readImageRequest(probeAdmitted[0].attachment, {
           width: 240,
           height: 160,
+          maxPixels: 64_000_000,
           maxBytes: 4 * 1024 * 1024,
         })
         const metadata = await sharp(Buffer.from(sheet.data)).metadata()

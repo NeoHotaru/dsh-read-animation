@@ -143,6 +143,9 @@ the gaps are gaps.
 
 ## Install
 
+Needs **DSH 0.1.3-alpha.2 or later** — see [COMPATIBILITY.md](COMPATIBILITY.md) for
+the measured range, how it was measured, and what is not claimed.
+
 ```sh
 dsh plugin --profile web add dsh-read-animation
 ```

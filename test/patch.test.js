@@ -11,7 +11,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { isWrapped, wrapServiceMethod } from '../lib/patch.js'
+import { isWrapped, missingMethods, wrapServiceMethod } from '../lib/patch.js'
 
 /** One service shaped like the cordis ones this plugin wraps: method on the prototype. */
 class MethodService {
@@ -98,4 +98,22 @@ test('a service that refuses the write reports itself uninstalled', () => {
   const patch = wrapServiceMethod(service, 'method', () => () => 'wrapped')
   assert.equal(patch.installed, false)
   assert.equal(service.method('x'), 'base:x')
+})
+
+test('a missing member is reported, not wrapped into existence', () => {
+  // Wrapping a method the host does not have used to create the property, so the
+  // service acquired a function whose only behaviour was to throw from inside a
+  // call that looked ordinary.
+  const service = new MethodService()
+  assert.deepEqual(missingMethods(service, ['method', 'absent', 'alsoAbsent']), ['absent', 'alsoAbsent'])
+  assert.deepEqual(missingMethods(service, ['method']), [])
+})
+
+test('a member that is not a function counts as missing', () => {
+  assert.deepEqual(missingMethods({ method: 'a string' }, ['method']), ['method'])
+})
+
+test('an absent service is missing everything asked of it', () => {
+  assert.deepEqual(missingMethods(undefined, ['a', 'b']), ['a', 'b'])
+  assert.deepEqual(missingMethods(null, ['a']), ['a'])
 })

@@ -71,6 +71,23 @@ test('the bundle patch mounts the package that declares it', async () => {
   assert.equal(row[2], manifest.name, 'the loader resolves `name` as a package specifier')
 })
 
+test('the declared DSH floor is the one the compatibility notes state', async () => {
+  // The floor is a measured claim, written in two places that are easy to update
+  // one at a time. This turns that drift into a test failure instead of a
+  // discrepancy nobody notices until someone installs on an unsupported host.
+  const manifest = JSON.parse(await readFile(join(REPO, 'package.json'), 'utf8'))
+  const notes = await readFile(join(REPO, 'COMPATIBILITY.md'), 'utf8')
+
+  const declared = String(manifest.engines.dsh).trim()
+  assert.ok(declared.startsWith('>='), `engines.dsh must be a ">=" range, got ${declared}`)
+  // Everything after ">=", prerelease tag included: a range truncated at the patch
+  // number would silently stop matching the floor written in the notes.
+  const floor = declared.slice(2)
+
+  assert.ok(notes.includes(`DSH ${floor} and later`), `COMPATIBILITY.md must state the floor as "DSH ${floor} and later"`)
+  assert.ok(manifest.files.includes('COMPATIBILITY.md'), 'files[] must ship COMPATIBILITY.md')
+})
+
 test('npm test runs every test file in test/', async () => {
   // The gate lists its files explicitly, so a new one can sit there never running —
   // which is how a fix lands with its own test green while the gate still reports

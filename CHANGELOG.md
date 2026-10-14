@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.2 — unreleased
+
+- **The supported DSH range is measured rather than assumed.** The plugin wraps
+  internal service methods, and `engines.dsh` claimed `>=0.1.7-alpha.1` on the
+  strength of one working install. The integration suite now runs against
+  `0.1.3-alpha.2` (the oldest release exposing every member), `0.1.7-alpha.2`,
+  `0.2.0-rc.2` — which is `latest` — and `0.2.1-alpha.3`, all 38/38, and
+  `scripts/check-dsh-compat.py` reads the type declarations of all 32 published
+  releases to find the floor: **0.1.3-alpha.2**. See
+  [COMPATIBILITY.md](COMPATIBILITY.md), including what is *not* claimed.
+- **A host missing a member now says so.** Nothing checked the members the plugin
+  calls before calling them: a host with `readImage` but no `saveImages` mounted
+  cleanly and then threw a `TypeError` from inside the tool. Mount reports every
+  missing member with the release it arrived in, the tool names the reason in its
+  own error, and a test covers the check itself.
+- **`preview-sheet` printed a path that does not exist.** It spelled the store
+  layout as `files/<name>` where the store uses `files/<2>/<digest>/<name>`. The
+  plugin asks `fileHostPath` and was always right; only the script's second copy of
+  the layout could drift.
+- **The integration harness needed `maxPixels` in a request target.** DSH
+  0.1.3-alpha.2 rejects a target without it; later releases default it. A test
+  artefact, not a compatibility problem, but it meant the suite could not run on
+  the floor version at all.
+
 ## 0.1.1 — 2026-10-14
 
 Fixed after the first release, from what a live session reported back.
