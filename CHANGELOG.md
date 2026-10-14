@@ -4,6 +4,62 @@
 
 Initial version.
 
+### Fixed after an adversarial audit
+
+Four independent reviews (blast radius, plugin code, packaging and lifecycle, then
+an adversarial pass over every high-severity finding) ran before this was
+published. What they found, and what changed:
+
+- **The frame sheet's `variantId` was not a content digest.** It was a hand-rolled
+  `sha256:filmanim…` string, and the DeepSeek adapter validates persisted ids
+  against `/^sha256:[0-9a-f]{64}$/` when it loads its upload index — then swallows
+  the failure into an *empty* index. The effect was not a visible error: it
+  discarded every other session's cached file id and re-uploaded every image.
+  Reproduced against the real exported index class (plugin id: written 1, reloaded
+  0; conforming id: 1/1). It is now the SHA-256 of the bytes being returned, which
+  also stops one on-disk cache entry from aliasing two different byte streams.
+- **The degraded path was worse than the missing feature.** The store reaches the
+  frame it re-encodes through its own `readImage` call, which this plugin wraps, so
+  falling back to the store's request read could hand the model the *whole
+  animation* where it expects one frame. The request path now suspends the
+  animation substitution around that call, and reads its own tiles through the
+  unwrapped read. Pinned by an integration check that breaks a stored frame and
+  asserts the fallback is exactly one frame.
+- **No decoded-pixel ceiling on the `read_animation` path.** `limitInputPixels`
+  was disabled with nothing in its place: a 60 KB file declaring a 9000x9000
+  canvas was refused by the deployment's own attachment store and decoded here
+  anyway, at about 310 MiB. Both the probe and the frame extraction now carry the
+  deployment's `imageLimits.maxImagePixels`.
+- **The sheet cache ignored the size the caller asked for**, so a caller with an
+  8 KiB budget could be served a 28 KB sheet built for a 4 MiB one. The target is
+  now part of the cache key, and a tile is never larger than a single frame would
+  have been for that caller.
+- **The measured header wrap could still be defeated.** A floor of 16 characters
+  kept the loop from reaching a budget that fit, so on a narrow canvas it gave up
+  and returned ink wider than the sheet. The floor is now low enough to be
+  satisfiable, and a canvas too narrow for legible text gets no header at all.
+- **The canvas was composed before it was shrunk**, building a 6156x6306 (about
+  111 MiB) image to throw away. Tile size and grid are settled first.
+- **Torn state files could poison the next record.** A crash part way through an
+  append left a line with no newline, so the following record concatenated onto it
+  and became unreadable too. A torn tail is now detected and compacted away.
+- **The store's bound applied to memory but not to what was read back**, and the
+  log was never compacted. Both fixed; the file is rewritten when it grows past
+  twice the entries worth keeping.
+- **Teardown was last-writer-wins.** Each install captured whatever was on the
+  method, so disposing one left another's patch removed and could reinstall a
+  disposed closure as a permanent own property. Three wrappers now share one
+  installer that resolves its delegate per call, removes cleanly (deleting an
+  inherited property rather than leaving a shadow behind), and reports whether it
+  actually took effect — the previous identity check compared a value that proxy
+  reads always re-wrap, so it could never detect a failed install.
+- **`npm test` did not run the invariant checks.** The no-`@deepseek-ai`-import
+  rule and the bundle/manifest consistency check lived only in the integration
+  harness, which prints SKIP and exits 0 without `DSH_HARNESS_MODULES`. Both now
+  run in `npm test`, which is also the `prepublishOnly` gate.
+- **`files[]` omitted `scripts/`** while `package.json` advertised two npm scripts
+  that live there, so the published package's own scripts were broken.
+
 - **A pasted animation keeps playing in the UI, and the message is left alone.**
   The browser already uploads an animated GIF/WebP byte-for-byte and labelled as
   such; the Host flattens it to a single

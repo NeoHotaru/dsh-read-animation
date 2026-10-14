@@ -5,8 +5,10 @@
 # while developing — and listed in `dsh.profile.bundles`, this row mounts the
 # `read_animation` tool into the profile's tool registry.
 #
-# The row id must match the `name` export in lib/index.js; the loader resolves
-# `name` as a package specifier from the profile, so it is the package name here.
+# The loader resolves `name` as a package specifier from the profile, so it is the
+# package name. `id` is only this row's identity; it is set to the package name to
+# match every other published dsh plugin, which makes a row easy to find in a
+# profile's patch layer.
 - insert:
-    - id: read-animation
+    - id: dsh-read-animation
       name: 'dsh-read-animation'

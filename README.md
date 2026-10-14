@@ -282,20 +282,29 @@ derives exactly those literals from that spec. Edit the spec, run
 
 ```sh
 npm install
-npm test                 # decoder, sampling, envelope, and argument validation
+npm test                 # decoder, sampling, envelope, wrapping, store, layout, arguments
 npm run test:integration # real dsh-fs, dsh-attachments, and dsh-tools, in-process
 npm run fixtures         # regenerate test/fixtures (needs Python 3 + Pillow)
 ```
 
-`npm test` needs nothing but Node and the installed `sharp`.
+`npm test` needs nothing but Node and the installed `sharp`, and it is the gate
+`npm publish` runs. It also holds the two invariants that used to live only in the
+integration harness — the no-`@deepseek-ai`-import rule and the bundle's
+consistency with `package.json` — because that harness prints SKIP and exits 0
+when `DSH_HARNESS_MODULES` is unset, so "the integration suite is green" could
+otherwise mean nothing had been checked.
 
 `npm run test:integration` boots the genuine `dsh-fs-local`,
 `dsh-attachment-local`, `dsh-system-prompt`, and `dsh-tools` plugins in-process,
 registers the tool, and executes it. It exists to prove the one thing no unit
 test can reach and the whole design depends on: that a single tool result
 carrying *several* image blocks survives the real registry and the real
-attachment store. Only the `llm` service and the agent object are stubbed, both
-because they need a live model session. Point it at your harness install:
+attachment store. It also drives the pasted-animation path end to end — a real
+`llm.stream` dispatch, a deep-frozen request, and the request image the adapter
+receives — because three separate bugs in this plugin were invisible to
+everything that did not go through that path. Only the `llm` service and the
+agent object are stubbed, both because they need a live model session. Point it
+at your harness install:
 
 ```sh
 DSH_HARNESS_MODULES="$(npm root -g)/@deepseek-ai/dsh/node_modules" npm run test:integration

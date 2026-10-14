@@ -232,18 +232,22 @@ PNG，所以 harness 的归一化管线对它无事可做。
 
 ```sh
 npm install
-npm test                 # 解码 / 采样 / 信封 / 参数校验
+npm test                 # 解码 / 采样 / 信封 / 包装器 / 状态存储 / 胶片条布局 / 参数校验
 npm run test:integration # 真实 dsh-fs、dsh-attachments、dsh-tools，进程内跑
 npm run fixtures         # 重新生成 test/fixtures（需要 Python 3 + Pillow）
 ```
 
-`npm test` 只需要 Node 和装好的 `sharp`。
+`npm test` 只需要 Node 和装好的 `sharp`，而且它是 `npm publish` 会跑的闸门。**那两条原本只活在
+集成 harness 里的不变量也在这里**——"不许 import `@deepseek-ai/*`"和"bundle 与 `package.json`
+一致"——因为集成 harness 在 `DSH_HARNESS_MODULES` 未设时会打印 SKIP 并 exit 0，否则
+「集成测试全绿」有可能意味着**什么都没检查**。
 
 `npm run test:integration` 会在进程内挂载真正的 `dsh-fs-local`、`dsh-attachment-local`、
 `dsh-system-prompt`、`dsh-tools`，注册工具并真实执行。它存在的唯一目的，是证明**没有单元测试
 能够触及、而整个设计都压在它身上**的那件事：一个 tool result 里塞进**多张**图片，能活着穿过真
-的注册表和真的附件服务。只桩掉了 `llm` 服务与 agent 对象——两者都需要活的模型会话。指向你的
-harness 安装：
+的注册表和真的附件服务。它同时也端到端驱动贴图那条路——真实的 `llm.stream` 派发、**深冻结**的
+请求、以及适配器最终拿到的那张请求图片——因为这个插件曾有**三个 bug** 对所有不走这条路的检查
+完全隐形。只桩掉了 `llm` 服务与 agent 对象——两者都需要活的模型会话。指向你的 harness 安装：
 
 ```sh
 DSH_HARNESS_MODULES="$(npm root -g)/@deepseek-ai/dsh/node_modules" npm run test:integration

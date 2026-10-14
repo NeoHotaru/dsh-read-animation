@@ -12,6 +12,7 @@
   },
   "files": [
     "lib",
+    "scripts",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",
@@ -20,7 +21,7 @@
     "LICENSE"
   ],
   "license": "MIT",
-  "author": "NeoHotaru",
+  "author": "NeoHotaru (https://github.com/NeoHotaru)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/NeoHotaru/dsh-read-animation.git"
@@ -54,9 +55,10 @@
     }
   },
   "scripts": {
-    "test": "node --test test/decode.test.js test/envelope.test.js test/filmstrip.test.js test/tool.test.js",
+    "test": "node --test test/animation.test.js test/decode.test.js test/envelope.test.js test/filmstrip.test.js test/model.test.js test/pasted.test.js test/patch.test.js test/shipped.test.js test/tool.test.js",
     "test:integration": "node test/integration/harness.mjs",
     "test:all": "npm test && npm run test:integration",
+    "prepublishOnly": "npm test",
     "fixtures": "python test/fixtures/make-fixtures.py",
     "derive-schema": "node scripts/derive-schema.mjs",
     "preview-sheet": "node scripts/preview-sheet.mjs"
@@ -67,13 +69,18 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",
     "@deepseek-ai/dsh-attachment": "*",
-    "@deepseek-ai/dsh-fs": "*"
+    "@deepseek-ai/dsh-attachment-local": "*",
+    "@deepseek-ai/dsh-fs": "*",
+    "@deepseek-ai/dsh-tools": "*"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": {
       "optional": true
     },
     "@deepseek-ai/dsh-attachment": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-attachment-local": {
       "optional": true
     },
     "@deepseek-ai/dsh-fs": {

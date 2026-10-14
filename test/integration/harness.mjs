@@ -23,7 +23,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -372,13 +372,78 @@ async function main() {
         }
         assert.equal(seen.length, 1, `the adapter read ${seen.length} images`)
         const sheet = seen[0]
-        assert.match(String(sheet.variantId), /^sha256:/)
+        // The exact shape the DeepSeek adapter validates when it loads its upload
+        // index. A non-conforming value does not fail loudly there: its loader
+        // swallows the error into an empty index, discarding every other session's
+        // cached file id, so this is the shape that keeps that from happening.
+        assert.match(String(sheet.variantId), /^sha256:[0-9a-f]{64}$/, 'a real content digest')
         assert.equal(sheet.attachment.attachmentId, probeAdmitted[0].attachment.attachmentId)
         const metadata = await sharp(Buffer.from(sheet.data)).metadata()
         assert.equal(metadata.width, sheet.width)
         assert.equal(metadata.height, sheet.height)
         assert.ok(sheet.width > 240, `a sheet must be wider than one frame, got ${sheet.width}`)
         assert.ok(sheet.height > 160, `a sheet must be taller than one frame, got ${sheet.height}`)
+      })
+
+      await check('two different targets do not share one sheet', async () => {
+        const ref = probeAdmitted[0].attachment
+        const small = await probeCtx.attachments.readImageRequest(ref, { width: 64, height: 64, maxBytes: 8 * 1024 })
+        const large = await probeCtx.attachments.readImageRequest(ref, {
+          width: 240,
+          height: 160,
+          maxBytes: 4 * 1024 * 1024,
+        })
+        assert.notEqual(small.bytes, large.bytes, 'the size a caller asked for is part of the picture')
+        assert.ok(small.bytes <= 8 * 1024, `the small target got ${small.bytes} bytes`)
+        assert.ok(
+          small.width * small.height < large.width * large.height,
+          `a small target must get a smaller picture: ${small.width}x${small.height} vs ${large.width}x${large.height}`,
+        )
+      })
+
+      await check('a sheet-build failure falls back to one frame, never the raw animation', async () => {
+        // The trap: the store reaches the frame it re-encodes through its own
+        // `readImage` call, which this plugin wraps, so a fallback that re-read the
+        // attachment would hand the model the whole GIF with verification skipped.
+        //
+        // Force the failure by making the captured record name a frame that does not
+        // exist, then ask for the request image and see what comes back.
+        const statePath = join(dshHome, 'read-animation', 'v1', 'pasted.jsonl')
+        const saved = await readFile(statePath, 'utf8')
+        const records = saved
+          .split('\n')
+          .filter((line) => line.length > 0)
+          .map((line) => JSON.parse(line))
+        const good = records
+          .map((record) => record.entry)
+          .find((candidate) => candidate?.frames?.length === 8 && candidate.original !== undefined)
+
+        const brokenEntry = structuredClone(good)
+        brokenEntry.frames[3] = { ...brokenEntry.frames[3], attachmentId: `sha256:${'0'.repeat(64)}` }
+        await writeFile(
+          statePath,
+          `${saved}${JSON.stringify({ id: probeAdmitted[0].attachment.attachmentId, entry: brokenEntry })}\n`,
+          'utf8',
+        )
+
+        try {
+          const broken = new Context()
+          await broken.plugin(SystemPrompt, {})
+          await broken.plugin(LocalFileSystem, { cwd: workspace })
+          await broken.plugin(LocalAttachmentStore, { dshHome })
+          await broken.plugin(ToolRuntime, {})
+          await broken.plugin(plugin, {})
+          const result = await broken.attachments.readImageRequest(probeAdmitted[0].attachment, {
+            width: 240,
+            height: 160,
+            maxBytes: 4 * 1024 * 1024,
+          })
+          assert.notEqual(result.mediaType, 'image/gif', 'the model must not be handed the animation')
+          const metadata = await sharp(Buffer.from(result.data)).metadata()
+          assert.equal(metadata.pages ?? 1, 1, 'the fallback must be exactly one frame')
+        } finally {
+          await writeFile(statePath, saved, 'utf8')
+        }
       })
 
       await check('an animation pasted before a restart still yields a sheet', async () => {
