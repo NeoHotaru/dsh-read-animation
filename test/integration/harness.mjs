@@ -307,6 +307,40 @@ async function main() {
       assert.equal(metadata.format, 'png')
     })
 
+    await check('reading the advertised normalized copy answers with the animation', async () => {
+      // The model is shown `attachments/v1/objects/<2>/<digest>` for every image it
+      // receives and reaches for that path first. For a captured animation it is a
+      // single frame, so without following the mapping the tool answers "this
+      // picture has one frame" — true of that file, useless as an answer, and
+      // exactly what a live session reported back.
+      const digest = messageAttachmentId.replace(/^sha256:/, '')
+      const copyPath = join(dshHome, 'attachments', 'v1', 'objects', digest.slice(0, 2), digest)
+      const viaCopy = await run({ file_path: copyPath })
+
+      assert.equal(viaCopy.isError, false, JSON.stringify(viaCopy.content))
+      assert.equal(imagesOf(viaCopy).length, 8, `the copy path yielded ${imagesOf(viaCopy).length} frames`)
+      assert.match(String(viaCopy.content[0].text), /8 frames/, 'the header must describe the animation')
+      assert.match(String(viaCopy.content[0].text), /moving-8f\.gif/, 'and name the file the bytes came from')
+    })
+
+    await check('the path the sheet advertises is a real file', async () => {
+      // The sheet's header tells the model where the animation itself is kept, so
+      // it can ask for a denser read instead of hunting through the store. That
+      // line is only useful if the accessor behind it returns something readable.
+      const records = (await readFile(join(dshHome, 'read-animation', 'v1', 'pasted.jsonl'), 'utf8'))
+        .split('\n')
+        .filter((line) => line.length > 0)
+        .map((line) => JSON.parse(line))
+      const entry = records.map((record) => record.entry).find((candidate) => candidate?.original !== undefined)
+      assert.ok(entry, 'a captured animation must be on record')
+
+      const path = ctx.attachments.fileHostPath(entry.original.file)
+      assert.equal(typeof path, 'string', 'fileHostPath must name a location')
+      assert.ok(existsSync(path), `${path} does not exist`)
+      const bytes = await readFile(path)
+      assert.equal(bytes.byteLength, entry.original.file.bytes, 'and must hold the animation itself')
+    })
+
     // --- the real chain: llm.stream -> adapter -> readImageRequest -----------
     //
     // The seam is only worth anything if it sits on the call the adapters actually

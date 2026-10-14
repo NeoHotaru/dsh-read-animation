@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.1 — 2026-10-14
+
+Fixed after the first release, from what a live session reported back.
+
+- **`read_animation` follows the path it advertises.** Every image a model receives
+  is shown as a normalized copy at `attachments/v1/objects/<2>/<digest>`, and that
+  is the path a model reaches for when it wants to look at the picture again. For a
+  pasted animation that copy is a single frame, so the tool answered "this picture
+  has one frame": true of that file, and useless as an answer. The tool now resolves
+  that path to the animation this plugin kept, and reports the file the bytes
+  actually came from. A bare `sha256:<digest>` is accepted too.
+- **The sheet says where the animation lives.** Its header ends with the path the
+  store keeps the original at, so a model that wants more than the eight samples can
+  read that path with explicit frame indices instead of searching the attachment
+  store for the file behind the picture it was sent.
+
 ## 0.1.0 — 2026-10-14
 
 First release.

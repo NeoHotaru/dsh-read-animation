@@ -24,10 +24,24 @@ import { fileURLToPath } from 'node:url'
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const { loadSharp } = await import(pathToFileURL(join(REPO, 'lib', 'sharp.js')).href)
 const { buildFilmstrip } = await import(pathToFileURL(join(REPO, 'lib', 'filmstrip.js')).href)
+// The same header text the model is handed, so this preview cannot drift from it.
+const { sheetHeader } = await import(pathToFileURL(join(REPO, 'lib', 'model.js')).href)
 
 const dshHome = process.env.DSH_HOME ?? resolve(REPO, '..')
 const stateFile = join(dshHome, 'read-animation', 'v1', 'pasted.jsonl')
 const objects = join(dshHome, 'attachments', 'v1', 'objects')
+const files = join(dshHome, 'attachments', 'v1', 'files')
+
+/**
+ * Where the store keeps a file's verbatim bytes.
+ *
+ * Mirrors `ctx.attachments.fileHostPath`, which the plugin uses for the header's
+ * last line. This script has no mounted service, so the layout is spelled out
+ * here; the integration harness asserts the real accessor returns a real path.
+ */
+function keptFilePath(ref) {
+  return join(files, ref.name)
+}
 
 /** Where a content-addressed attachment object lives. */
 function objectPath(attachmentId) {
@@ -62,18 +76,8 @@ for (const [position, frame] of frames.entries()) {
 }
 
 const animation = note?.animation
-const total = animation?.frameCount ?? tiles.length
-const fps =
-  animation && total > 1 && animation.durationMs > 0
-    ? ` · ~${Math.round((total * 1000) / animation.durationMs)} fps`
-    : ''
-const header = animation === undefined
-  ? `${tiles.length} sampled frames of one animation, in reading order`
-  : `${animation.mediaType} · ${animation.width}x${animation.height} px · ${total} frames · ` +
-    `${animation.durationMs} ms${fps}${animation.minDelayMs === animation.maxDelayMs ? '' : ' · uneven timing'}` +
-    `${animation.loopsForever ? ' · loops forever' : ''}\n` +
-    `The ${tiles.length} tiles below are evenly spaced samples in reading order; ` +
-    `each frame's index, duration and start time is printed under it.`
+const kept = record.entry.original?.file
+const header = sheetHeader(animation, tiles.length, kept?.name === undefined ? undefined : keptFilePath(kept))
 
 const sheet = await buildFilmstrip(sharp, { tiles, header, maxBytes: 4 * 1024 * 1024, maxDimension: 4096 })
 await writeFile(out, sheet.data)

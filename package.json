@@ -1,6 +1,6 @@
 {
   "name": "dsh-read-animation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Let a DeepSeek Harness agent actually see an animated GIF or animated WebP: decode every frame, sample the animation across time, and hand the model a labelled sequence of real frames instead of the single first frame the harness otherwise delivers.",
   "type": "module",
   "main": "lib/index.js",
