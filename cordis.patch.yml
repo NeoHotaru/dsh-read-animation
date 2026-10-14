@@ -1,0 +1,12 @@
+# dsh-read-animation bundle patch.
+#
+# Installed as a profile dependency — `dsh plugin --profile <name> add dsh-read-animation`
+# for the published package, or `dsh plugin --profile <name> add link:<this directory>`
+# while developing — and listed in `dsh.profile.bundles`, this row mounts the
+# `read_animation` tool into the profile's tool registry.
+#
+# The row id must match the `name` export in lib/index.js; the loader resolves
+# `name` as a package specifier from the profile, so it is the package name here.
+- insert:
+    - id: read-animation
+      name: 'dsh-read-animation'
