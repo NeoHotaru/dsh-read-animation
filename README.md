@@ -147,18 +147,19 @@ the gaps are gaps.
 dsh plugin --profile web add dsh-read-animation
 ```
 
-Replace `web` with your profile name. **Not on npm yet** — until it is, install
-straight from the repository:
+Replace `web` with your profile name. Both routes are verified in a real profile:
+the install lands, `dsh plugin add` registers the bundle, and the `sharp` native
+binary resolves from the package's own `node_modules`.
 
 ```sh
-dsh plugin --profile web add github:NeoHotaru/dsh-read-animation
+dsh plugin --profile web add dsh-read-animation                            # npm
+dsh plugin --profile web add github:NeoHotaru/dsh-read-animation#v0.1.0    # a tagged commit
 ```
 
-That route is verified end to end: it installs, `dsh plugin add` registers the
-bundle, and the `sharp` native binary resolves from the package's own
-`node_modules`. (A git spec copies the whole repository, tests and fixtures
-included, which is why the npm package above is the nicer install once it
-exists.)
+The git route copies the whole repository, tests and fixtures included, which is
+why npm is the nicer install. (A brand-new package name goes through npm's staged
+publishing on its first release, so the version you install may briefly not exist
+yet while the registry processes it.)
 
 Or from a checkout:
 

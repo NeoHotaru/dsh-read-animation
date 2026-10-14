@@ -1,8 +1,13 @@
 # Changelog
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-10-14
 
-Initial version.
+First release.
+
+Note for anyone publishing a later version of this package: npm routes the first
+release of a brand-new package name through staged publishing, and the registry
+carries a public `0.0.0-stage` placeholder while the real version is processed. The
+real version appears on its own a couple of minutes later; nothing needs approving.
 
 ### Fixed after an adversarial audit
 
