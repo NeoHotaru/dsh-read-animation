@@ -70,3 +70,16 @@ test('the bundle patch mounts the package that declares it', async () => {
   assert.equal(row[1], manifest.name, 'the row id should match the package name, as the other plugins do')
   assert.equal(row[2], manifest.name, 'the loader resolves `name` as a package specifier')
 })
+
+test('npm test runs every test file in test/', async () => {
+  // The gate lists its files explicitly, so a new one can sit there never running —
+  // which is how a fix lands with its own test green while the gate still reports
+  // the old total. This asserts the list against the directory.
+  const manifest = JSON.parse(await readFile(join(REPO, 'package.json'), 'utf8'))
+  const present = (await readdir(join(REPO, 'test'))).filter((name) => name.endsWith('.test.js')).sort()
+
+  assert.ok(present.length >= 8, `only found ${present.length} test files`)
+  for (const name of present) {
+    assert.ok(manifest.scripts.test.includes(`test/${name}`), `test/${name} is not in the npm test script`)
+  }
+})
