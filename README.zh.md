@@ -121,7 +121,17 @@ frame 9 of 24 (sample 3) · starts at 450 ms · displayed for 50 ms
 dsh plugin --profile web add dsh-read-animation
 ```
 
-`web` 换成你自己的 profile 名。**目前还没发到 npm** —— 在那之前从源码装：
+`web` 换成你自己的 profile 名。**目前还没发到 npm** —— 在那之前可以直接从仓库装：
+
+```sh
+dsh plugin --profile web add github:NeoHotaru/dsh-read-animation
+```
+
+这条路是**实测过的**：能装上、`dsh plugin add` 会把它注册成 bundle、`sharp` 的原生二进制也能
+从包自己的 `node_modules` 里解析出来。（git spec 会把整个仓库连测试和 fixture 一起拷下来，
+所以等上面那个 npm 包存在之后，npm 那条路更干净。）
+
+或者从本地检出：
 
 ```sh
 cd dsh-read-animation

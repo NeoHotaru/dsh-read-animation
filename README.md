@@ -148,7 +148,19 @@ dsh plugin --profile web add dsh-read-animation
 ```
 
 Replace `web` with your profile name. **Not on npm yet** — until it is, install
-from a checkout:
+straight from the repository:
+
+```sh
+dsh plugin --profile web add github:NeoHotaru/dsh-read-animation
+```
+
+That route is verified end to end: it installs, `dsh plugin add` registers the
+bundle, and the `sharp` native binary resolves from the package's own
+`node_modules`. (A git spec copies the whole repository, tests and fixtures
+included, which is why the npm package above is the nicer install once it
+exists.)
+
+Or from a checkout:
 
 ```sh
 cd dsh-read-animation
