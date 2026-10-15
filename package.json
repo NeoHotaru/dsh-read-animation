@@ -13,6 +13,7 @@
   "files": [
     "lib",
     "scripts",
+    "assets",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",
@@ -21,6 +22,7 @@
     "THIRD_PARTY.md",
     "LICENSE"
   ],
+  "icon": "assets/icon.svg",
   "license": "MIT",
   "author": "NeoHotaru (https://github.com/NeoHotaru)",
   "repository": {

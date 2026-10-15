@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Four frames of one animation, with the subject growing across them">
+  <!--
+    The plugin's whole idea in one mark: one animation shown as a grid of frames
+    over time, with the subject changing across them.
+
+    Drawn for the size it is actually rendered at, roughly 40px on a bundle card:
+    four bold shapes, no gradients, no text, nothing that turns to mush. The
+    background is a mid-tone tile so the mark reads on both a light and a dark
+    card, and the frames inside carry the contrast.
+  -->
+  <rect width="96" height="96" rx="21" fill="#26333F"/>
+  <g fill="#EDF2F8">
+    <rect x="10" y="10" width="36" height="36" rx="7"/>
+    <rect x="50" y="10" width="36" height="36" rx="7"/>
+    <rect x="10" y="50" width="36" height="36" rx="7"/>
+    <rect x="50" y="50" width="36" height="36" rx="7"/>
+  </g>
+  <!--
+    The subject grows across the four moments. Size is a property the eye reads
+    even when it scans a grid out of order, which a position change is not: in a
+    2x2 layout, reading order jumps from the top right back to the bottom left, so
+    four dots each moving inside their own frame read as four unrelated things.
+  -->
+  <g fill="#26333F">
+    <circle cx="28" cy="28" r="5"/>
+    <circle cx="68" cy="28" r="7"/>
+    <circle cx="28" cy="68" r="9"/>
+  </g>
+  <!-- The last sampled moment is the one the sheet calls out, so it is the one
+       shape in the mark that is not greyscale. -->
+  <circle cx="68" cy="68" r="11" fill="#C9761B"/>
+</svg>

@@ -11,7 +11,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { access, readFile, readdir } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -86,6 +86,25 @@ test('the declared DSH floor is the one the compatibility notes state', async ()
 
   assert.ok(notes.includes(`DSH ${floor} and later`), `COMPATIBILITY.md must state the floor as "DSH ${floor} and later"`)
   assert.ok(manifest.files.includes('COMPATIBILITY.md'), 'files[] must ship COMPATIBILITY.md')
+})
+
+test('the declared icon is one the host would accept', async () => {
+  // The manifest contract: an SVG, PNG, JPEG or WebP file relative to this
+  // manifest, at most 256 KiB, and contained inside the package after realpath
+  // resolution. A file that breaks any of those is not an error anywhere — the
+  // bundle card just keeps the default artwork, silently.
+  const manifest = JSON.parse(await readFile(join(REPO, 'package.json'), 'utf8'))
+  assert.equal(typeof manifest.icon, 'string', 'the package should declare an icon')
+
+  const path = resolve(REPO, manifest.icon)
+  const inside = relative(REPO, path)
+  assert.ok(!inside.startsWith('..'), `the icon resolves outside the package: ${inside}`)
+  assert.ok(manifest.files.includes(inside.split(/[\\/]/)[0]), `files[] must ship ${inside.split(/[\\/]/)[0]}`)
+
+  const bytes = await readFile(path)
+  assert.ok(bytes.byteLength <= 256 * 1024, `the icon is ${bytes.byteLength} bytes, over 256 KiB`)
+  assert.match(inside, /\.(svg|png|jpe?g|webp)$/i, 'the icon must be a format the host renders')
+  assert.ok(bytes.byteLength > 0, 'the icon is empty')
 })
 
 test('npm test runs every test file in test/', async () => {
