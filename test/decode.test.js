@@ -23,7 +23,7 @@ import {
   renderFrames,
   sniffAnimatedPng,
 } from '../lib/animation.js'
-import { sharpOrSkip } from './helpers/sharp.js'
+import { loadSharp } from '../lib/sharp.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const fixture = (name) => join(HERE, 'fixtures', name)
@@ -59,10 +59,8 @@ async function hasPartialAlpha(sharp, pngBytes) {
   return false
 }
 
-test('probeAnimation reads frame count, delays, and duration from a GIF', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('probeAnimation reads frame count, delays, and duration from a GIF', async () => {
+  const sharp = loadSharp()
   const animation = await probeAnimation(sharp, await load('moving-8f.gif'))
   assert.equal(animation.format, 'gif')
   assert.equal(animation.mediaType, 'image/gif')
@@ -77,10 +75,8 @@ test('probeAnimation reads frame count, delays, and duration from a GIF', async 
   assert.equal(animation.loop, 0)
 })
 
-test('probeAnimation reads an animated WebP the same way', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('probeAnimation reads an animated WebP the same way', async () => {
+  const sharp = loadSharp()
   const animation = await probeAnimation(sharp, await load('moving.webp'))
   assert.equal(animation.format, 'webp')
   assert.equal(animation.mediaType, 'image/webp')
@@ -88,10 +84,8 @@ test('probeAnimation reads an animated WebP the same way', async (t) => {
   assert.equal(animation.durationMs, 640)
 })
 
-test('probeAnimation refuses an APNG instead of silently returning its first frame', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('probeAnimation refuses an APNG instead of silently returning its first frame', async () => {
+  const sharp = loadSharp()
   const bytes = await load('anim.apng.png')
   // Precondition: the file really is an APNG, and sharp really cannot see that.
   assert.equal(sniffAnimatedPng(bytes), true)
@@ -105,18 +99,14 @@ test('probeAnimation refuses an APNG instead of silently returning its first fra
   )
 })
 
-test('probeAnimation reports a single-frame GIF rather than failing', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('probeAnimation reports a single-frame GIF rather than failing', async () => {
+  const sharp = loadSharp()
   const animation = await probeAnimation(sharp, await load('still.gif'))
   assert.equal(animation.frameCount, 1)
 })
 
-test('probeAnimation rejects bytes that are not an image', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('probeAnimation rejects bytes that are not an image', async () => {
+  const sharp = loadSharp()
   const bytes = await load('not-an-image.txt')
   await assert.rejects(() => probeAnimation(sharp, bytes), /could not be decoded/)
 })
@@ -127,10 +117,8 @@ test('sniffAnimatedPng accepts still PNGs and rejects non-PNG bytes', async () =
   assert.equal(sniffAnimatedPng(new Uint8Array([1, 2, 3])), false)
 })
 
-test('declaresTransparency reads the container header, which hasAlpha cannot substitute for', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('declaresTransparency reads the container header, which hasAlpha cannot substitute for', async () => {
+  const sharp = loadSharp()
   assert.equal(declaresTransparency('gif', await load('moving-8f.gif')), false)
   assert.equal(declaresTransparency('gif', await load('transparent.gif')), true)
   assert.equal(declaresTransparency('webp', await load('moving.webp')), true, 'Pillow sets the VP8X alpha flag')
@@ -145,10 +133,8 @@ test('declaresTransparency reads the container header, which hasAlpha cannot sub
   assert.equal((await sharp(await load('transparent.gif')).metadata()).hasAlpha, true)
 })
 
-test('even sampling spreads across time and yields distinct frame indices', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('even sampling spreads across time and yields distinct frame indices', async () => {
+  const sharp = loadSharp()
   const animation = await probeAnimation(sharp, await load('moving-8f.gif'))
   const { plan } = planFrames(animation, { maxFrames: 4 })
   assert.deepEqual(plan.map((f) => f.index), [0, 2, 5, 7])
@@ -156,19 +142,15 @@ test('even sampling spreads across time and yields distinct frame indices', asyn
   assert.deepEqual(plan.map((f) => f.position), [1, 2, 3, 4])
 })
 
-test('a budget at or above the frame count returns every frame', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('a budget at or above the frame count returns every frame', async () => {
+  const sharp = loadSharp()
   const animation = await probeAnimation(sharp, await load('uneven-delays.gif'))
   const { plan } = planFrames(animation, { maxFrames: DEFAULT_MAX_FRAMES })
   assert.deepEqual(plan.map((f) => f.index), [0, 1, 2, 3])
 })
 
-test('sampling an uneven animation reports only the frames that occupy the timeline', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('sampling an uneven animation reports only the frames that occupy the timeline', async () => {
+  const sharp = loadSharp()
   // Delays are 500/50/50/400 ms: frames 1 and 2 flash past. Asking for two
   // samples must return the two long frames, not an arbitrary pair.
   const animation = await probeAnimation(sharp, await load('uneven-delays.gif'))
@@ -180,10 +162,8 @@ test('sampling an uneven animation reports only the frames that occupy the timel
   assert.equal(reduced, false)
 })
 
-test('explicit frame indices are honoured in the given order, and out-of-range ones are refused', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('explicit frame indices are honoured in the given order, and out-of-range ones are refused', async () => {
+  const sharp = loadSharp()
   const animation = await probeAnimation(sharp, await load('moving-8f.gif'))
   const { plan } = planFrames(animation, { frames: [7, 0, 3, 3] })
   assert.deepEqual(plan.map((f) => f.index), [7, 0, 3], 'duplicates collapse, order is preserved')
@@ -193,19 +173,15 @@ test('explicit frame indices are honoured in the given order, and out-of-range o
   assert.throws(() => planFrames(animation, { frames: [] }), /at least one frame/)
 })
 
-test('max_frames is validated rather than silently coerced', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('max_frames is validated rather than silently coerced', async () => {
+  const sharp = loadSharp()
   const animation = await probeAnimation(sharp, await load('moving-8f.gif'))
   assert.throws(() => planFrames(animation, { maxFrames: 0 }), /positive integer/)
   assert.throws(() => planFrames(animation, { maxFrames: 2.5 }), /positive integer/)
 })
 
-test('extracted frames are the frames that were asked for, in order', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('extracted frames are the frames that were asked for, in order', async () => {
+  const sharp = loadSharp()
   const bytes = await load('moving-8f.gif')
   const animation = await probeAnimation(sharp, bytes)
   const { plan } = planFrames(animation, { maxFrames: 4 })
@@ -230,10 +206,8 @@ test('extracted frames are the frames that were asked for, in order', async (t) 
   }
 })
 
-test('start and end frames are genuinely different pictures', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('start and end frames are genuinely different pictures', async () => {
+  const sharp = loadSharp()
   const bytes = await load('moving-8f.gif')
   const animation = await probeAnimation(sharp, bytes)
   const { plan } = planFrames(animation, { frames: [0, 7] })
@@ -241,10 +215,8 @@ test('start and end frames are genuinely different pictures', async (t) => {
   assert.notEqual(Buffer.from(first.data).toString('base64'), Buffer.from(last.data).toString('base64'))
 })
 
-test('max_edge caps the long edge and never enlarges', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('max_edge caps the long edge and never enlarges', async () => {
+  const sharp = loadSharp()
   const bytes = await load('big-60f.gif')
   const animation = await probeAnimation(sharp, bytes)
   const plan = planFrames(animation, { maxFrames: 2 }).plan
@@ -264,10 +236,8 @@ test('max_edge caps the long edge and never enlarges', async (t) => {
   await assert.rejects(async () => renderFrames(sharp, bytes, plan, { maxEdge: 8 }), /max_edge/)
 })
 
-test('a transparent GIF is flattened onto white by default and can keep alpha on request', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('a transparent GIF is flattened onto white by default and can keep alpha on request', async () => {
+  const sharp = loadSharp()
   const bytes = await load('transparent.gif')
   const animation = await probeAnimation(sharp, bytes)
   assert.equal(animation.usesTransparency, true)
@@ -282,10 +252,8 @@ test('a transparent GIF is flattened onto white by default and can keep alpha on
   assert.equal(await hasPartialAlpha(sharp, kept[0].data), true, 'kept frames must retain transparency')
 })
 
-test('a zero frame delay is treated as 100 ms instead of collapsing the duration', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('a zero frame delay is treated as 100 ms instead of collapsing the duration', async () => {
+  const sharp = loadSharp()
   // Sharp reports a zero delay for this file; the animation would otherwise have
   // a zero duration and every sampling target would clamp to frame 0.
   const animation = await probeAnimation(sharp, await load('zero-delay.gif'))
@@ -297,10 +265,8 @@ test('a zero frame delay is treated as 100 ms instead of collapsing the duration
   assert.ok(new Set(plan.map((f) => f.index)).size > 1, 'sampling must not collapse onto one frame')
 })
 
-test('renderFrames observes cancellation between frames', async (t) => {
-  const sharp = sharpOrSkip(t)
-  if (sharp === undefined) return
-
+test('renderFrames observes cancellation between frames', async () => {
+  const sharp = loadSharp()
   const bytes = await load('big-60f.gif')
   const animation = await probeAnimation(sharp, bytes)
   const controller = new AbortController()
