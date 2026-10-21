@@ -1,12 +1,6 @@
 /**
  * Make the harness packages resolvable from this repository.
  *
- * The plugin imports `@deepseek-ai/dsh-tools` and (through its own loader)
- * `sharp`. Neither is a dependency a contributor would `npm install`: `sharp`
- * belongs to the harness, and `@deepseek-ai/*` packages only exist inside a DSH
- * installation. A real deployment resolves both because the plugin is installed
- * into a profile whose tree hoists them.
- *
  * This reproduces that resolution without an import hook and without symlinks
  * (which need privileges this may not have): for each package it writes a tiny
  * `node_modules` entry that re-exports the package's *real* files by absolute
@@ -24,7 +18,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve, sep } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')

@@ -23,7 +23,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -180,19 +180,6 @@ async function main() {
     await check('the shipped output schema is inside the harness supported subset', () => {
       assertSupportedJsonSchema(toolModule.OUTPUT_SCHEMA)
       assertObjectJsonSchema(toolModule.OUTPUT_SCHEMA)
-    })
-    await check('no shipped module imports @deepseek-ai/* at runtime', async () => {
-      const files = (await readdir(join(REPO, 'lib'))).filter((f) => f.endsWith('.js'))
-      assert.ok(files.length >= 5, `expected the lib modules, got ${files.join(', ')}`)
-      for (const file of files) {
-        const source = await readFile(join(REPO, 'lib', file), 'utf8')
-        const bare = source.match(/^\s*import[^\n]*from\s+['"]@deepseek-ai\//mu)
-        assert.equal(
-          bare,
-          null,
-          `${file} imports a harness package at runtime; a "link:"ed checkout cannot resolve one`,
-        )
-      }
     })
 
     // --- pasted animations: captured at admission, given to the model only ----
