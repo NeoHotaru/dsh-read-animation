@@ -206,7 +206,7 @@ read_animation { file_path: "dance.gif",
 Optional, in the plugin row of your profile's `cordis.patch.yml`:
 
 ```yaml
-- id: read-animation
+- id: dsh-read-animation
   name: 'dsh-read-animation'
   config:
     maxFrames: 8          # default frames per call, 1..16
