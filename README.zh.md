@@ -172,7 +172,7 @@ read_animation { file_path: "dance.gif",
 可选，写在 profile 的 `cordis.patch.yml` 里那一行：
 
 ```yaml
-- id: read-animation
+- id: dsh-read-animation
   name: 'dsh-read-animation'
   config:
     maxFrames: 8          # 每次调用的默认帧数，1..16
