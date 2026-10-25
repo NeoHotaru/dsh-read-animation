@@ -44,7 +44,7 @@ test('the sheet contains every frame, the header, and the labels', async () => {
   const bytes = await readFile(join(FIXTURES, 'moving-8f.gif'))
   const animation = await probeAnimation(sharp, bytes)
   const planned = planFrames(animation, { maxFrames: 8 })
-  const frames = await renderFrames(sharp, bytes, planned.plan, { maxEdge: 640, background: 'white' })
+  const frames = await renderFrames(sharp, bytes, planned, { maxEdge: 640, background: 'white' })
   assert.equal(frames.length, 8)
 
   const tiles = frames.map((frame) => ({
@@ -116,7 +116,7 @@ test('an over-budget sheet is shrunk to fit rather than returned too large', asy
   const bytes = await readFile(join(FIXTURES, 'moving-8f.gif'))
   const animation = await probeAnimation(sharp, bytes)
   const planned = planFrames(animation, { maxFrames: 8 })
-  const frames = await renderFrames(sharp, bytes, planned.plan, { maxEdge: 640, background: 'white' })
+  const frames = await renderFrames(sharp, bytes, planned, { maxEdge: 640, background: 'white' })
   const tiles = frames.map((frame) => ({
     data: frame.data,
     width: animation.width,

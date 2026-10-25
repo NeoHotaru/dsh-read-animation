@@ -45,7 +45,7 @@ test('frame extraction carries the same ceiling', async () => {
   const animation = await probeAnimation(sharp, bytes, { maxPixels: DEFAULT_MAX_PIXELS })
   const planned = planFrames(animation, { maxFrames: 2 })
   await assert.rejects(
-    () => renderFrames(sharp, bytes, planned.plan, { maxEdge: 640, background: 'white', maxPixels: 1000 }),
+    () => renderFrames(sharp, bytes, planned, { maxEdge: 640, background: 'white', maxPixels: 1000 }),
     /pixel limit|Input image exceeds/i,
   )
 })
