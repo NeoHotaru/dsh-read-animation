@@ -88,6 +88,12 @@ async function main() {
   const LocalAttachmentStore = (await import('@deepseek-ai/dsh-attachment-local')).default
   const SystemPrompt = (await import('@deepseek-ai/dsh-system-prompt')).default
   const ToolRuntime = (await import('@deepseek-ai/dsh-tools')).default
+  const nativeEntry = join(modulesRoot, '@deepseek-ai', 'dsh-tool-executor-native', 'lib', 'index.js')
+  const NativeExecutor = existsSync(nativeEntry) ? await import(pathToFileURL(nativeEntry).href) : undefined
+  async function mountTools(context) {
+    await context.plugin(ToolRuntime, {})
+    if (NativeExecutor !== undefined) await context.plugin(NativeExecutor, {})
+  }
   const plugin = await import(pathToFileURL(join(REPO, 'lib', 'index.js')).href)
   // Deliberately the plugin's own loader: this also proves it resolves `sharp`
   // through the same chain a real deployment would.
@@ -122,7 +128,7 @@ async function main() {
     let inputModalities = ['text', 'image']
     disposers.push(ctx.provide('llm', { resolveModelInfo: async () => ({ inputModalities }) }))
     await ctx.plugin(LocalAttachmentStore, { dshHome })
-    await ctx.plugin(ToolRuntime, {})
+    await mountTools(ctx)
     await ctx.plugin(plugin, {})
 
     const agent = {
@@ -133,15 +139,24 @@ async function main() {
       },
     }
     let callId = 0
-    const run = (args) =>
-      ctx.tools.execute({
-        callId: `harness-${(callId += 1)}`,
+    const run = async (args) => {
+      const id = `harness-${(callId += 1)}`
+      const signal = new AbortController().signal
+      if (NativeExecutor !== undefined) {
+        const batch = await ctx.tools.execute({
+          calls: [{ id, name: 'read_animation', arguments: JSON.stringify(args) }], agent, signal,
+        })
+        return batch.results[0].result
+      }
+      return ctx.tools.execute({
+        callId: id,
         name: 'read_animation',
         // The registry field is `arguments`, and it must be a lossless JSON value.
         arguments: args,
         agent,
-        signal: new AbortController().signal,
+        signal,
       })
+    }
 
     console.log('\nregistration:')
     const schemas = ctx.tools.schemas()
@@ -207,6 +222,63 @@ async function main() {
       const metadata = await sharp(Buffer.from(stored.data)).metadata()
       assert.equal(metadata.pages ?? 1, 1, 'and keeps exactly one frame')
     })
+
+    for (const [file, mediaType] of [['moving-8f.gif', 'image/gif'], ['moving.webp', 'image/webp']]) {
+      await check(`raw upload captures ${mediaType} before prompt admission`, async () => {
+        const bytes = await readFile(join(FIXTURES, file))
+        const refs = await ctx.attachments.saveImages([{ data: bytes, mediaType, name: file }])
+        assert.equal(refs.length, 1)
+        const records = (await readFile(join(dshHome, 'read-animation', 'v1', 'pasted.jsonl'), 'utf8'))
+          .split('\n').filter(Boolean).map(JSON.parse)
+        const entry = records.filter((record) => record.id === refs[0].attachmentId).at(-1)?.entry
+        assert.equal(entry?.frames.length, 8, 'capture must happen before the upload becomes a stored ref')
+
+        const displayed = await ctx.attachments.readImage(refs[0])
+        assert.deepEqual(Buffer.from(displayed.data), bytes, 'display must receive the original animation')
+        const sheet = await ctx.attachments.readImageRequest(refs[0], {
+          width: 240, height: 160, maxPixels: 64_000_000, maxBytes: 4 * 1024 * 1024,
+        })
+        assert.ok(sheet.width > 240 && sheet.height > 160, 'the model must receive a frame sheet')
+
+        const digest = refs[0].attachmentId.replace(/^sha256:/, '')
+        const copyPath = join(dshHome, 'attachments', 'v1', 'objects', digest.slice(0, 2), digest)
+        const result = await run({ file_path: copyPath })
+        assert.equal(result.isError, false, JSON.stringify(result.content))
+        assert.equal(imagesOf(result).length, 8, 'a normalized-copy path must resolve to the animation')
+      })
+    }
+
+    const uploadEntry = join(modulesRoot, '@deepseek-ai', 'dsh-client-file-upload', 'lib', 'index.js')
+    if (existsSync(uploadEntry)) {
+      const FileUploads = (await import(pathToFileURL(uploadEntry).href)).default
+      if (typeof FileUploads.prototype.uploadImageStream === 'function') {
+        await check('a raw upload receipt survives stored-reference prompt admission', async () => {
+          const uploadAgent = { ...agent, id: 'raw-upload-integration' }
+          // Session lookup and HTTP registration are outside this storage test.
+          // The upload service, receipt resolution, and attachment store are real.
+          disposers.push(ctx.provide('agents', { get: (id) => id === uploadAgent.id ? uploadAgent : undefined }))
+          disposers.push(ctx.provide('commands', { registerFileReceiptResolver: () => () => {} }))
+          disposers.push(ctx.provide('connection', { fetch: { register: () => () => {} } }))
+          await ctx.plugin(FileUploads, {})
+          const stateFile = join(dshHome, 'read-animation', 'v1', 'pasted.jsonl')
+          const before = (await readFile(stateFile, 'utf8')).split('\n').filter(Boolean).length
+          const upload = await ctx.fileUploads.uploadImageStream({
+            sessionId: uploadAgent.id, name: 'moving-8f.gif', mediaType: 'image/gif',
+            signal: new AbortController().signal,
+            data: (async function* () { yield gifBytes.subarray(0, 7); yield gifBytes.subarray(7) })(),
+          })
+          const stored = ctx.fileUploads.resolve(uploadAgent, upload.receiptId)
+          assert.equal(stored.type, 'image')
+          assert.equal(stored.data, undefined, 'prompt admission receives no original bytes')
+          const admitted = await ctx.attachments.admitPromptContent([{ type: 'text', text: 'look' }, stored])
+          assert.equal(admitted[1].attachment.attachmentId, upload.image.attachmentId)
+          const after = (await readFile(stateFile, 'utf8')).split('\n').filter(Boolean).length
+          assert.equal(after, before + 1, 'capture happens once during upload, before stored admission')
+          const displayed = await ctx.attachments.readImage(admitted[1].attachment)
+          assert.deepEqual(Buffer.from(displayed.data), gifBytes)
+        })
+      }
+    }
 
     const submitted = [
       { type: 'text', text: 'look at this' },
@@ -354,7 +426,7 @@ async function main() {
       await probeCtx.plugin(LocalFileSystem, { cwd: workspace })
       await probeCtx.plugin(LocalAttachmentStore, { dshHome })
       await probeCtx.plugin(Llm, {})
-      await probeCtx.plugin(ToolRuntime, {})
+      await mountTools(probeCtx)
       await probeCtx.plugin(plugin, {})
 
       const seen = []
@@ -467,7 +539,7 @@ async function main() {
           await broken.plugin(SystemPrompt, {})
           await broken.plugin(LocalFileSystem, { cwd: workspace })
           await broken.plugin(LocalAttachmentStore, { dshHome })
-          await broken.plugin(ToolRuntime, {})
+          await mountTools(broken)
           await broken.plugin(plugin, {})
           const result = await broken.attachments.readImageRequest(probeAdmitted[0].attachment, {
             width: 240,
@@ -490,7 +562,7 @@ async function main() {
         await resumed.plugin(SystemPrompt, {})
         await resumed.plugin(LocalFileSystem, { cwd: workspace })
         await resumed.plugin(LocalAttachmentStore, { dshHome })
-        await resumed.plugin(ToolRuntime, {})
+        await mountTools(resumed)
         await resumed.plugin(plugin, {})
         const sheet = await resumed.attachments.readImageRequest(probeAdmitted[0].attachment, {
           width: 240,

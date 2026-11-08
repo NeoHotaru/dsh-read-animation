@@ -47,10 +47,11 @@ APNG 得的是同一种病，而且更隐蔽：libvips 8.18.7 根本不认 `acTL
 **入口一 · 贴进聊天框。** 浏览器那段路本身是干净的——粘贴处理器把 `clipboardData` 里的原始
 `File` 直接交出去，上传路径对 `image/gif` / `image/webp` 原样编码（`imageMediaType()` 明确
 接受这两种并原样返回），没有 canvas、没有 `drawImage`、没有 `toBlob`。**字节完好地到达宿主。**
-丢掉它的是宿主自己：`admitPromptContent` 把每张图都过一遍「单帧」归一化，源字节不保留。
+宿主通过 `attachments.saveImages` 将图片归一化。DSH 0.2.2 在上传阶段就完成这一步，
+之后消息接收入口拿到的是已存储的图片引用。
 
-`admitPromptContent` 是**原件还存在的最后一刻**，所以本插件在这里把它解码、把帧存下来——
-然后**把原样的结果还回去**：
+本插件在 `saveImages` 保存图片时，用仍可访问的原始字节解码动画，并将原件和帧关联到
+返回的图片引用。这同时覆盖原始文件上传和旧版编码图片入口：
 
 ```
 你贴 1 张动图
@@ -201,8 +202,8 @@ PNG，所以 harness 的归一化管线对它无事可做。
 `read_image` 完全一致。当解析出的模型路由未声明图片输入时，工具会拒绝执行——理由和
 `read_image` 相同。
 
-**贴进聊天框的动图**分三步，都不碰你的消息：**捕获**在准入层
-（`ctx.attachments.admitPromptContent` 是原件还在的最后一刻），**显示**在
+**贴进聊天框的动图**分三步，都不碰你的消息：**捕获**在图片存储层
+（`ctx.attachments.saveImages` 仍能访问上传原件），**显示**在
 `ctx.attachments.readImage`（界面取图的那一次读，返回原件所以会动），**交付**在
 `ctx.attachments.readImageRequest`（模型那份，拼成一张带标注的胶片条）。三步都是
 **猴补核心服务的方法**，所以写得很保守——

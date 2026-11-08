@@ -2,8 +2,8 @@
 
 ## Supported range
 
-**DSH 0.1.3-alpha.2 and later.** Verified as of 2026-10-14, against DSH
-0.2.1-alpha.3 (the newest release at that time).
+**DSH 0.1.3-alpha.2 and later.** Upload compatibility rechecked on
+2026-11-08 against DSH 0.2.2-rc.1 and 0.1.7-alpha.2.
 
 ## What was measured
 
@@ -20,6 +20,22 @@ dispatch. Pointed at four versions spanning the range:
 | `0.1.7-alpha.2` — the version this was developed against | 38/38 |
 | `0.2.0-rc.2` — `latest` on that date | 38/38 |
 | `0.2.1-alpha.3` — `alpha` on that date, newest | 38/38 |
+
+The table above records the 2026-10-14 baseline. The upload regression checks
+added on 2026-11-08 produced the following results:
+
+| DSH | checks |
+| --- | --- |
+| `0.1.7-alpha.2` — encoded-prompt and raw image-storage paths | 40/40 |
+| `0.2.2-rc.1` — includes the raw upload service and stored-reference admission | 41/41 |
+
+DSH 0.2.2 normalizes uploaded images before prompt admission. Capture now wraps
+`saveImages`, which receives raw bytes for both upload and encoded-prompt paths.
+The regressions check GIF and animated WebP display, frame sheets, and reads of
+normalized-copy paths. The 0.2.2 case also calls the real
+`FileUploads.uploadImageStream` and resolves its receipt into a stored image
+reference. The test harness mounts the native tool executor on hosts that expose
+that separate service.
 
 ```sh
 DSH_HARNESS_MODULES=/path/to/dsh/node_modules node test/integration/harness.mjs
@@ -44,7 +60,6 @@ first appears in:
 | member | since |
 | --- | --- |
 | `saveImages` | `0.1.0-rc.7` |
-| `admitPromptContent` | `0.1.2-alpha.2` |
 | `readImageRequest` | `0.1.2-alpha.3` |
 | `readFileStream` | `0.1.2-alpha.3` |
 | `saveFile` | `0.1.3-alpha.2` |
@@ -61,7 +76,7 @@ single frame, and it says which member is missing and when that member arrived.
   the range was checked to expose the full member list, but a release whose types
   are complete can still behave differently. The four points span floor to ceiling.
 - **The upper bound is a date, not a guarantee.** This plugin wraps
-  `admitPromptContent`, `readImage`, and `readImageRequest` — internal service
+  `saveImages`, `readImage`, and `readImageRequest` — internal service
   methods. A DSH release that changes their signatures or the shape of a request
   target will break it, and nothing here can detect that in advance.
 - **The `engines.dsh` field is documentation.** npm does not enforce a
