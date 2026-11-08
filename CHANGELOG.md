@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 — 2026-11-08
 
 - Fix [#7](https://github.com/NeoHotaru/dsh-read-animation/issues/7). Capture
   uploaded GIF and animated WebP bytes at `attachments.saveImages`. DSH 0.2.2
@@ -11,7 +11,6 @@
   0.2.2, its upload service and receipt resolution. Update the integration fixture
   for the separate native tool executor and batch execution API.
 
-## 0.1.2 — unreleased
 
 - **The supported DSH range is measured rather than assumed.** The plugin wraps
   internal service methods, and `engines.dsh` claimed `>=0.1.7-alpha.1` on the
