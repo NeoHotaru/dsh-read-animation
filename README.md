@@ -52,13 +52,13 @@ the chunk stream and refuses it by name instead of returning frame 0.
 paste handler hands the clipboard's own `File` straight to the upload path, and
 that path encodes `image/gif` and `image/webp` unchanged (`imageMediaType()`
 accepts both and returns them as-is) — no canvas, no `drawImage`, no `toBlob`.
-**The bytes reach the Host whole.** It is the Host that destroys them:
-`admitPromptContent` runs every image through the single-frame normalizer and
-keeps no copy of the source.
+**The bytes reach the Host whole.** The Host normalizes them through
+`attachments.saveImages`. In DSH 0.2.2 this happens during upload, so prompt
+admission receives an already-stored image reference.
 
-`admitPromptContent` is therefore the last moment the original bytes exist. The
-plugin wraps it, decodes the animation and stores the frames — then **returns the
-original result untouched**:
+The plugin wraps `saveImages`, captures the animation from its raw inputs, and
+stores the original and decoded frames against the returned image reference.
+This covers raw uploads and older encoded-prompt admission:
 
 ```
 you paste 1 animation
@@ -242,8 +242,8 @@ tool refuses to run when the resolved model route does not declare image input,
 for the same reason `read_image` does.
 
 **A pasted animation** is handled in three steps, none of which touch your
-message: **capture** at admission (`ctx.attachments.admitPromptContent` is the last
-moment the original bytes exist), **display** at `ctx.attachments.readImage` (the
+message: **capture** at image storage (`ctx.attachments.saveImages` receives the
+original bytes), **display** at `ctx.attachments.readImage` (the
 one read the UI makes, served the original so it plays), and **delivery** at
 `ctx.attachments.readImageRequest` (the model's copy, composed into one labelled
 sheet). All three are **monkey-patches of core service methods**, so they do

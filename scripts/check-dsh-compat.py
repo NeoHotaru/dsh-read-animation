@@ -22,7 +22,6 @@ REG = 'https://registry.npmjs.org'
 CACHE = {}
 
 REQUIRED = [
-    'admitPromptContent',
     'saveImages',
     'saveFile',
     'readImage',
