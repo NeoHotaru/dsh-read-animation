@@ -9,7 +9,6 @@ rebuild it; run it with any Python 3 that has Pillow:
 
 Every fixture is deterministic: same inputs, same bytes.
 """
-import math
 import os
 
 from PIL import Image, ImageDraw
@@ -188,20 +187,6 @@ def main():
     # 9. Not an image at all.
     with open(os.path.join(HERE, "not-an-image.txt"), "w", encoding="utf-8", newline="\n") as handle:
         handle.write("This is text, not an animation.\n")
-
-    # 10. A sine sweep with a real visual event, for eyeballing the tool's output
-    #     end to end rather than only asserting on pixels.
-    width, height, count = 320, 200, 24
-    frames = []
-    for i in range(count):
-        image = Image.new("RGB", (width, height), INK)
-        draw = ImageDraw.Draw(image)
-        x = int(20 + (width - 100) * (0.5 + 0.5 * math.sin(i / count * 2 * math.pi)))
-        y = int(height / 2 - 20 + 30 * math.sin(i / count * 4 * math.pi))
-        draw.ellipse([x, y, x + 60, y + 60], fill=MARK)
-        draw.text((10, 8), f"t={i * 50}ms", fill=(255, 255, 255))
-        frames.append(image)
-    write_gif(os.path.join(HERE, "sine-24f.gif"), frames, duration=50)
 
 
 if __name__ == "__main__":
