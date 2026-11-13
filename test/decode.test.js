@@ -150,7 +150,7 @@ test('even sampling spreads across time and yields distinct frame indices', asyn
   if (sharp === undefined) return
 
   const animation = await probeAnimation(sharp, await load('moving-8f.gif'))
-  const { plan } = planFrames(animation, { maxFrames: 4 })
+  const plan = planFrames(animation, { maxFrames: 4 })
   assert.deepEqual(plan.map((f) => f.index), [0, 2, 5, 7])
   assert.deepEqual(plan.map((f) => f.timeMs), [0, 160, 400, 560])
   assert.deepEqual(plan.map((f) => f.position), [1, 2, 3, 4])
@@ -161,7 +161,7 @@ test('a budget at or above the frame count returns every frame', async (t) => {
   if (sharp === undefined) return
 
   const animation = await probeAnimation(sharp, await load('uneven-delays.gif'))
-  const { plan } = planFrames(animation, { maxFrames: DEFAULT_MAX_FRAMES })
+  const plan = planFrames(animation, { maxFrames: DEFAULT_MAX_FRAMES })
   assert.deepEqual(plan.map((f) => f.index), [0, 1, 2, 3])
 })
 
@@ -175,9 +175,8 @@ test('sampling an uneven animation reports only the frames that occupy the timel
   assert.deepEqual(animation.delaysMs, [500, 50, 50, 400])
   assert.equal(animation.durationMs, 1000)
 
-  const { plan, reduced } = planFrames(animation, { maxFrames: 2 })
+  const plan = planFrames(animation, { maxFrames: 2 })
   assert.deepEqual(plan.map((f) => f.index), [0, 3])
-  assert.equal(reduced, false)
 })
 
 test('explicit frame indices are honoured in the given order, and out-of-range ones are refused', async (t) => {
@@ -185,7 +184,7 @@ test('explicit frame indices are honoured in the given order, and out-of-range o
   if (sharp === undefined) return
 
   const animation = await probeAnimation(sharp, await load('moving-8f.gif'))
-  const { plan } = planFrames(animation, { frames: [7, 0, 3, 3] })
+  const plan = planFrames(animation, { frames: [7, 0, 3, 3] })
   assert.deepEqual(plan.map((f) => f.index), [7, 0, 3], 'duplicates collapse, order is preserved')
 
   assert.throws(() => planFrames(animation, { frames: [8] }), /out of range/)
@@ -208,7 +207,7 @@ test('extracted frames are the frames that were asked for, in order', async (t) 
 
   const bytes = await load('moving-8f.gif')
   const animation = await probeAnimation(sharp, bytes)
-  const { plan } = planFrames(animation, { maxFrames: 4 })
+  const plan = planFrames(animation, { maxFrames: 4 })
   const rendered = await renderFrames(sharp, bytes, plan, {})
 
   assert.equal(rendered.length, 4)
@@ -236,7 +235,7 @@ test('start and end frames are genuinely different pictures', async (t) => {
 
   const bytes = await load('moving-8f.gif')
   const animation = await probeAnimation(sharp, bytes)
-  const { plan } = planFrames(animation, { frames: [0, 7] })
+  const plan = planFrames(animation, { frames: [0, 7] })
   const [first, last] = await renderFrames(sharp, bytes, plan, {})
   assert.notEqual(Buffer.from(first.data).toString('base64'), Buffer.from(last.data).toString('base64'))
 })
@@ -247,7 +246,7 @@ test('max_edge caps the long edge and never enlarges', async (t) => {
 
   const bytes = await load('big-60f.gif')
   const animation = await probeAnimation(sharp, bytes)
-  const plan = planFrames(animation, { maxFrames: 2 }).plan
+  const plan = planFrames(animation, { maxFrames: 2 })
 
   const small = await renderFrames(sharp, bytes, plan, { maxEdge: 128 })
   for (const frame of small) {
@@ -272,7 +271,7 @@ test('a transparent GIF is flattened onto white by default and can keep alpha on
   const animation = await probeAnimation(sharp, bytes)
   assert.equal(animation.usesTransparency, true)
 
-  const plan = planFrames(animation, { maxFrames: 2 }).plan
+  const plan = planFrames(animation, { maxFrames: 2 })
   const flattened = await renderFrames(sharp, bytes, plan, { background: 'white' })
   for (const frame of flattened) {
     assert.equal(await hasPartialAlpha(sharp, frame.data), false, 'flattened frames must be fully opaque')
@@ -293,7 +292,7 @@ test('a zero frame delay is treated as 100 ms instead of collapsing the duration
   assert.ok(animation.delaysMs.every((d) => d === ZERO_DELAY_SUBSTITUTE_MS))
   assert.equal(animation.durationMs, ZERO_DELAY_SUBSTITUTE_MS * animation.frameCount)
 
-  const { plan } = planFrames(animation, { maxFrames: 4 })
+  const plan = planFrames(animation, { maxFrames: 4 })
   assert.ok(new Set(plan.map((f) => f.index)).size > 1, 'sampling must not collapse onto one frame')
 })
 
@@ -307,7 +306,7 @@ test('renderFrames observes cancellation between frames', async (t) => {
   controller.abort(new Error('cancelled by test'))
 
   await assert.rejects(
-    () => renderFrames(sharp, bytes, planFrames(animation, { maxFrames: 4 }).plan, {}, controller.signal),
+    () => renderFrames(sharp, bytes, planFrames(animation, { maxFrames: 4 }), {}, controller.signal),
     /cancelled by test/,
   )
 })
