@@ -13,7 +13,7 @@
  * @module scripts/derive-schema
  */
 
-import { ensureHarnessModules, findHarnessModules } from '../test/integration/link-modules.mjs'
+import { ensureHarnessModules, findHarnessModules } from './link-modules.mjs'
 import { OUTPUT_SPEC, PARAMETER_SPEC } from '../lib/tool.js'
 
 const modulesRoot = findHarnessModules()

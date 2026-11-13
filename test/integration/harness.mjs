@@ -29,7 +29,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { ensureHarnessModules, findHarnessModules } from './link-modules.mjs'
+import { ensureHarnessModules, findHarnessModules } from '../../scripts/link-modules.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO = resolve(HERE, '..', '..')

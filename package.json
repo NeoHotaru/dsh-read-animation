@@ -88,6 +88,9 @@
     },
     "@deepseek-ai/dsh-fs": {
       "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
     }
   }
 }
