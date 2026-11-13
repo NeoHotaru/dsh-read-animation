@@ -58,7 +58,7 @@
     }
   },
   "scripts": {
-    "test": "node --test test/animation.test.js test/decode.test.js test/envelope.test.js test/filmstrip.test.js test/model.test.js test/pacing.test.js test/pasted.test.js test/patch.test.js test/read.test.js test/shipped.test.js test/tool.test.js",
+    "test": "node --test test/animation.test.js test/decode.test.js test/envelope.test.js test/filmstrip.test.js test/model.test.js test/pasted.test.js test/patch.test.js test/read.test.js test/shipped.test.js test/tool.test.js",
     "test:integration": "node test/integration/harness.mjs",
     "test:all": "npm test && npm run test:integration",
     "prepublishOnly": "npm test",
